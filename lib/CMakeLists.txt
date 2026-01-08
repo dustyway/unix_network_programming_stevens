@@ -1,9 +1,11 @@
 set(LIBRARY_SOURCES
         error.c
         readline.c
+        str_cli08.c
         str_echo.c
         wraplib.c
         wrapsock.c
+        wrapstdio.c
         wrapunix.c
         writen.c
 )

@@ -388,14 +388,14 @@ void	 Write(int, void *, size_t);
 // 			/* prototypes for our stdio wrapper functions: see {Sec errors} */
 // void	 Fclose(FILE *);
 // FILE	*Fdopen(int, const char *);
-// char	*Fgets(char *, int, FILE *);
+char	*Fgets(char *, int, FILE *);
 // FILE	*Fopen(const char *, const char *);
-// void	 Fputs(const char *, FILE *);
+void	 Fputs(const char *, FILE *);
 //
 // 			/* prototypes for our socket wrapper functions: see {Sec errors} */
 int		 Accept(int, SA *, socklen_t *);
 void	 Bind(int, const SA *, socklen_t);
-// void	 Connect(int, const SA *, socklen_t);
+void	 Connect(int, const SA *, socklen_t);
 // void	 Getpeername(int, SA *, socklen_t *);
 // void	 Getsockname(int, SA *, socklen_t *);
 // void	 Getsockopt(int, int, int, void *, socklen_t *);
