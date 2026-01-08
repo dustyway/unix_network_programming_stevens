@@ -7,4 +7,6 @@ set(LIBRARY_NAME lib_stevens)
 
 add_subdirectory(lib)
 add_subdirectory(intro)
+add_subdirectory(reactor)
+add_subdirectory(select)
 add_subdirectory(tcpcliserv)

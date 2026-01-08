@@ -5,6 +5,8 @@
 #define	__unp_h
 
 #define _GNU_SOURCE 1
+#define HAVE_POLL_H 1
+#define HAVE_POLL 1
 
 /* If anything changes in the following list of #includes, must change
    acsite.m4 also, for configure's tests. */
@@ -345,8 +347,8 @@ void			 Inet_pton(int, const char *, void *);
 Sigfunc *Signal(int, Sigfunc *);
 // Sigfunc *Signal_intr(int, Sigfunc *);
 // int		 Sock_bind_wild(int, int);
-// char	*Sock_ntop(const SA *, socklen_t);
-// char	*Sock_ntop_host(const SA *, socklen_t);
+char	*Sock_ntop(const SA *, socklen_t);
+char	*Sock_ntop_host(const SA *, socklen_t);
 // int		 Sockfd_to_family(int);
 // int		 Tcp_connect(const char *, const char *);
 // int		 Tcp_listen(const char *, const char *, socklen_t *);
@@ -401,9 +403,9 @@ void	 Connect(int, const SA *, socklen_t);
 // void	 Getsockopt(int, int, int, void *, socklen_t *);
 // int		 Isfdtype(int, int);
 void	 Listen(int, int);
-// #ifdef	HAVE_POLL
-// int		 Poll(struct pollfd *, unsigned long, int);
-// #endif
+#ifdef	HAVE_POLL
+int		 Poll(struct pollfd *, unsigned long, int);
+#endif
 ssize_t	 Readline(int, void *, size_t);
 ssize_t	 Readn(int, void *, size_t);
 // ssize_t	 Recv(int, void *, size_t, int);
@@ -414,7 +416,7 @@ void	 Send(int, const void *, size_t, int);
 // void	 Sendto(int, const void *, size_t, int, const SA *, socklen_t);
 // void	 Sendmsg(int, const struct msghdr *, int);
 // void	 Setsockopt(int, int, int, const void *, socklen_t);
-// void	 Shutdown(int, int);
+void	 Shutdown(int, int);
 // int		 Sockatmark(int);
 int		 Socket(int, int, int);
 // void	 Socketpair(int, int, int, int *);
