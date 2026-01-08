@@ -3,7 +3,6 @@ set(LIBRARY_SOURCES
         readline.c
         readn.c
         signal.c
-        str_cli08.c
         str_echo.c
         wraplib.c
         wrapsock.c

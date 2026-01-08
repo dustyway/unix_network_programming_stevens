@@ -6,5 +6,6 @@ set(CMAKE_C_STANDARD 11)
 set(LIBRARY_NAME lib_stevens)
 
 add_subdirectory(lib)
+add_subdirectory(select)
 add_subdirectory(intro)
 add_subdirectory(tcpcliserv)
