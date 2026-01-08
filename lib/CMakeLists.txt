@@ -1,6 +1,8 @@
 set(LIBRARY_SOURCES
         error.c
         readline.c
+        readn.c
+        signal.c
         str_cli08.c
         str_echo.c
         wraplib.c

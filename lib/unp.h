@@ -342,7 +342,7 @@ void			 Inet_pton(int, const char *, void *);
 // int		 Readable_timeo(int, int);
 // ssize_t	 Recvfrom_flags(int, void *, size_t, int *, SA *, socklen_t *,
 // 		 struct in_pktinfo *);
-// Sigfunc *Signal(int, Sigfunc *);
+Sigfunc *Signal(int, Sigfunc *);
 // Sigfunc *Signal_intr(int, Sigfunc *);
 // int		 Sock_bind_wild(int, int);
 // char	*Sock_ntop(const SA *, socklen_t);
@@ -405,7 +405,7 @@ void	 Listen(int, int);
 // int		 Poll(struct pollfd *, unsigned long, int);
 // #endif
 ssize_t	 Readline(int, void *, size_t);
-// ssize_t	 Readn(int, void *, size_t);
+ssize_t	 Readn(int, void *, size_t);
 // ssize_t	 Recv(int, void *, size_t, int);
 // ssize_t	 Recvfrom(int, void *, size_t, int, SA *, socklen_t *);
 // ssize_t	 Recvmsg(int, struct msghdr *, int);
