@@ -2,19 +2,75 @@
 
 #include	"unp.h"
 #include <sys/epoll.h>
+#define MAX_CLIENTS 1024
 #define MAX_EVENTS 16
 #define NOTDEF  1
+
+
+
+static int clients[MAX_CLIENTS];
+static int client_count = 0;
+static int listenfd = -1;
+static int epoll_fd = -1;
+static volatile sig_atomic_t running = 1;
+
+void cleanup() {
+    printf("\nCleaning up...\n");
+
+    // Close all client connections
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i] >= 0) {
+            printf("Closing client fd=%d\n", clients[i]);
+            close(clients[i]);
+        }
+    }
+
+    // Close listener and epoll
+    if (listenfd >= 0) close(listenfd);
+    if (epoll_fd >= 0) close(epoll_fd);
+
+    printf("Server shutdown complete\n");
+}
+
+void sigint_handler(int sig) {
+    running = 0;
+}
+
+void add_client(int fd) {
+    if (client_count < MAX_CLIENTS) {
+        clients[client_count++] = fd;
+    }
+}
+
+void remove_client(int fd) {
+    for (int i = 0; i < client_count; i++) {
+        if (clients[i] == fd) {
+            // Shift remaining clients down
+            for (int j = i; j < client_count - 1; j++) {
+                clients[j] = clients[j + 1];
+            }
+            client_count--;
+            break;
+        }
+    }
+}
+
 
 int
 main(int argc, char **argv)
 {
-	int					i, listenfd, connfd;
-	int					nready, epoll_fd;
+	int					i, connfd, sockfd;
+	int					nready;
 	ssize_t				n;
 	char				line[MAXLINE];
 	socklen_t			clilen;
     struct epoll_event events[MAX_EVENTS];
 	struct sockaddr_in	cliaddr, servaddr;
+
+    // Setup cleanup on exit
+    atexit(cleanup);
+    signal(SIGINT, sigint_handler);
+    signal(SIGTERM, sigint_handler);
 
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);
 
@@ -27,11 +83,16 @@ main(int argc, char **argv)
 
 	Listen(listenfd, LISTENQ);
 
+    int optval = 1;
+    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+        perror("setsockopt");
+        return 1;
+    }
+
     // Create epoll instance
     epoll_fd = epoll_create1(0);
     if (epoll_fd < 0) {
         perror("epoll_create1");
-        close(listenfd);
         return 1;
     }
 
@@ -41,90 +102,56 @@ main(int argc, char **argv)
     ev.data.fd = listenfd;
     if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, listenfd, &ev) < 0) {
         perror("epoll_ctl");
-        close(listenfd);
-        close(epoll_fd);
         return 1;
     }
 
-    for ( ; ; ) {
+    while (running) {
 		nready = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
         if (nready < 0) {
+            if (errno == EINTR) continue;
             perror("epoll_wait");
             break;
         }
 
         for (i = 0; i < nready; i++) {
+            // New connection
             if (events[i].data.fd == listenfd) {
-                // New connection
+                clilen = sizeof(cliaddr);
                 connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
-                int client = accept(listenfd, NULL, NULL);
-                if (client < 0) {
-                    perror("accept");
+#ifdef	NOTDEF
+                printf("new client: %s\n", Sock_ntop((SA *) &cliaddr, clilen));
+#endif
+
+                if (client_count >= MAX_CLIENTS) {
+                    printf("Max clients reached, rejecting connection\n");
+                    Close(connfd);
                     continue;
                 }
 
-                printf("New connection: fd=%d\n", client);
+                printf("New connection: fd=%d (total: %d)\n", connfd, client_count + 1);
 
+                add_client(connfd);
                 ev.events = EPOLLIN;
-                ev.data.fd = client;
-                if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client, &ev) < 0) {
+                ev.data.fd = connfd;
+                if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, connfd, &ev) < 0) {
                     perror("epoll_ctl: client");
-                    close(client);
+                    remove_client(connfd);
+                    Close(connfd);
                 }
+            } else {
+                // Data from client
+                sockfd = events[i].data.fd;
+                if ( (n = Readline(sockfd, line, MAXLINE)) <= 0) {
+                    // Connection closed or error
+                    if (n < 0) perror("readline");
+                    printf("Connection closed: fd=%d (remaining: %d)\n", sockfd, client_count - 1);
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, sockfd, NULL);
+                    Close(sockfd);
+                    remove_client(sockfd);
+                } else
+                    Writen(sockfd, line, n);
             }
-
-
-		if (client[0].revents & POLLRDNORM) {	/* new client connection */
-			clilen = sizeof(cliaddr);
-			connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
-#ifdef	NOTDEF
-			printf("new client: %s\n", Sock_ntop((SA *) &cliaddr, clilen));
-#endif
-
-			for (i = 1; i < OPEN_MAX; i++)
-				if (client[i].fd < 0) {
-					client[i].fd = connfd;	/* save descriptor */
-					break;
-				}
-			if (i == OPEN_MAX)
-				err_quit("too many clients");
-
-			client[i].events = POLLRDNORM;
-			if (i > maxi)
-				maxi = i;				/* max index in client[] array */
-
-			if (--nready <= 0)
-				continue;				/* no more readable descriptors */
-		}
-
-		for (i = 1; i <= maxi; i++) {	/* check all clients for data */
-			if ( (sockfd = client[i].fd) < 0)
-				continue;
-			if (client[i].revents & (POLLRDNORM | POLLERR)) {
-				if ( (n = readline(sockfd, line, MAXLINE)) < 0) {
-					if (errno == ECONNRESET) {
-							/*4connection reset by client */
-#ifdef	NOTDEF
-						printf("client[%d] aborted connection\n", i);
-#endif
-						Close(sockfd);
-						client[i].fd = -1;
-					} else
-						err_sys("readline error");
-				} else if (n == 0) {
-						/*4connection closed by client */
-#ifdef	NOTDEF
-					printf("client[%d] closed connection\n", i);
-#endif
-					Close(sockfd);
-					client[i].fd = -1;
-				} else
-					Writen(sockfd, line, n);
-
-				if (--nready <= 0)
-					break;				/* no more readable descriptors */
-			}
 		}
 	}
+    return 0;
 }
-/* end fig02 */

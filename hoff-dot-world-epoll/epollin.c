@@ -34,7 +34,7 @@ int main() {
 	char message[] = "Hello there!";
 	char receiveBuffer[4096];
 
-	struct epoll_event einf[MAX_INPUT_PIPES];
+	struct epoll_event einf;
 	struct epoll_event eventQueue[MAX_EPOLL_EVENTS];
 
 	epollFd = epoll_create1(0);
@@ -50,10 +50,10 @@ int main() {
 
 		printf("fd for %d = %d, %d\n", i, inf[i][0], inf[i][1]);
 
-		einf[i].events = EPOLLIN;
-		einf[i].data.fd = inf[i][0];
+		einf.events = EPOLLIN;
+		einf.data.fd = inf[i][0];
 
-		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, inf[i][0], &einf[i]) == -1) {
+		if (epoll_ctl(epollFd, EPOLL_CTL_ADD, inf[i][0], &einf) == -1) {
 			printf("Couldn't add to epoll!\n");
 		}
 
@@ -64,7 +64,7 @@ int main() {
 	}
 
 	while (true) {
-		epoll_ctl(epollFd, EPOLL_CTL_DEL, inf[2][0], &einf[2]);
+		epoll_ctl(epollFd, EPOLL_CTL_DEL, inf[2][0], NULL);
 
 		eventsReady = epoll_wait(epollFd, eventQueue, MAX_EPOLL_EVENTS, -1);
 
