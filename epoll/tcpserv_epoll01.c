@@ -7,7 +7,6 @@
 #define NOTDEF  1
 
 
-
 static int clients[MAX_CLIENTS];
 static int client_count = 0;
 static int listenfd = -1;
@@ -74,6 +73,12 @@ main(int argc, char **argv)
 
 	listenfd = Socket(AF_INET, SOCK_STREAM, 0);
 
+    int optval = 1;
+    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
+        perror("setsockopt");
+        return 1;
+    }
+
 	bzero(&servaddr, sizeof(servaddr));
 	servaddr.sin_family      = AF_INET;
 	servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -82,12 +87,6 @@ main(int argc, char **argv)
 	Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
 
 	Listen(listenfd, LISTENQ);
-
-    int optval = 1;
-    if (setsockopt(listenfd, SOL_SOCKET, SO_REUSEADDR, &optval, sizeof(optval)) < 0) {
-        perror("setsockopt");
-        return 1;
-    }
 
     // Create epoll instance
     epoll_fd = epoll_create1(0);
